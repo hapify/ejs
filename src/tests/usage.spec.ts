@@ -1,23 +1,23 @@
 import { expect, fail } from '@hapi/code';
 import 'mocha';
 
-import { HapifyVM } from '../index';
+import { HapifyEJSVM } from '../index';
 
 describe('usage', () => {
 	it('normal', async () => {
-		expect(new HapifyVM().run('return new Date().toString();', {})).to.be.a.string();
+		expect(new HapifyEJSVM().run('return new Date().toString();', {})).to.be.a.string();
 	});
 	it('context access', async () => {
-		expect(new HapifyVM().run('return value', { value: 'TheValue' })).to.equal('TheValue');
-		expect(new HapifyVM().run('return value.prop', { value: { prop: 'TheValue' } })).to.equal('TheValue');
+		expect(new HapifyEJSVM().run('return value', { value: 'TheValue' })).to.equal('TheValue');
+		expect(new HapifyEJSVM().run('return value.prop', { value: { prop: 'TheValue' } })).to.equal('TheValue');
 	});
 	it('no return', async () => {
-		expect(new HapifyVM().run('return;', {})).to.be.undefined();
+		expect(new HapifyEJSVM().run('return;', {})).to.be.undefined();
 	});
 
 	it('return non string', async () => {
 		try {
-			new HapifyVM().run('return 1;', {});
+			new HapifyEJSVM().run('return 1;', {});
 			fail('Should throw an error');
 		} catch (e) {
 			expect(e.name).to.equal('VmOutputError');
@@ -27,12 +27,12 @@ describe('usage', () => {
 	});
 
 	it('return non string but allowed', async () => {
-		expect(new HapifyVM({ allowAnyOutput: true }).run('return 1', {})).to.equal(<any>1);
+		expect(new HapifyEJSVM({ allowAnyOutput: true }).run('return 1', {})).to.equal(<any>1);
 	});
 
 	it('timeout', async () => {
 		try {
-			new HapifyVM({ timeout: 50 }).run('while(true) {}', {});
+			new HapifyEJSVM({ timeout: 50 }).run('while(true) {}', {});
 			fail('Should throw an error');
 		} catch (e) {
 			expect(e.name).to.equal('VmTimeoutError');
@@ -43,7 +43,7 @@ describe('usage', () => {
 
 	it('evaluation error 1', async () => {
 		try {
-			new HapifyVM({ timeout: 200 }).run('/* comment */ a();', {});
+			new HapifyEJSVM({ timeout: 200 }).run('/* comment */ a();', {});
 			fail('Should throw an error');
 		} catch (e) {
 			expect(e.name).to.equal('VmEvaluationError');
@@ -57,7 +57,7 @@ describe('usage', () => {
 
 	it('evaluation error 2', async () => {
 		try {
-			new HapifyVM({ timeout: 200 }).run('function f() { return 3;', {});
+			new HapifyEJSVM({ timeout: 200 }).run('function f() { return 3;', {});
 			fail('Should throw an error');
 		} catch (e) {
 			expect(e.name).to.equal('VmEvaluationError');

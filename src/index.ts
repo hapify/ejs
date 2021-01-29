@@ -1,8 +1,8 @@
-import { VM } from 'vm2';
+import { HapifyVM } from '@hapify/vm';
 
 const SECOND = 1000;
 
-interface HapifyVMOptions {
+interface HapifyEJSVMOptions {
 	timeout?: number;
 	allowAnyOutput?: boolean;
 }
@@ -22,79 +22,29 @@ export class TimeoutError extends Error {
 	code = 6003;
 	name = 'VmTimeoutError';
 }
-export class IntegrityError extends Error {
-	code = 6004;
-	name = 'VmIntegrityError';
-}
 
-export class HapifyVM {
+export class HapifyEJSVM {
 	/** Default options */
-	private defaultOptions: HapifyVMOptions = {
+	private defaultOptions: HapifyEJSVMOptions = {
 		timeout: SECOND,
 		allowAnyOutput: false,
 	};
 	/** Actual options */
-	private options: HapifyVMOptions;
-	/** Built-in objects to remove from sandbox */
-	private forbiddenObjects: {
-		console: undefined;
-	};
-	/** RegEx used to extract error's line & column */
-	private stackRegex = /vm\.js:([0-9]+):([0-9]+)/m;
+	private options: HapifyEJSVMOptions;
 
 	/** Constructor */
-	constructor(options: HapifyVMOptions = {}) {
+	constructor(options: HapifyEJSVMOptions = {}) {
 		this.options = Object.assign({}, this.defaultOptions, options);
 	}
 
-	/** Wrap content in auto-executable function */
+	/** Wrap content in ejs compiler */
 	private wrap(content: string): string {
 		return `(function() {\n${content}\n })()`;
 	}
 
 	/** Execute content */
 	run(content: string, context: { [key: string]: any }): string | any {
-		let result;
-
-		const vm = new VM({
-			timeout: this.options.timeout,
-			sandbox: Object.assign(context, this.forbiddenObjects),
-			compiler: 'javascript',
-			eval: false,
-			wasm: false,
-		});
-		const wrappedContent = this.wrap(content);
-
-		try {
-			result = vm.run(wrappedContent);
-		} catch (error) {
-			// Check error
-			if (typeof error.message !== 'string' || typeof error.stack !== 'string') {
-				throw new IntegrityError('Invalid error');
-			}
-
-			if (error.message.startsWith('Script execution timed out')) {
-				throw new TimeoutError(error.message);
-			}
-
-			// Parse error
-			const evalError = new EvaluationError(error.message);
-			const matches = this.stackRegex.exec(error.stack);
-			if (matches) {
-				const lineNumber = Number(matches[1]);
-				const columnNumber = Number(matches[2]);
-				evalError.details = `Error: ${evalError.message}. Line: ${lineNumber}, Column: ${columnNumber}`;
-				evalError.lineNumber = lineNumber - 1; // Minus 1 for wrapper
-				evalError.columnNumber = columnNumber;
-			}
-
-			throw evalError;
-		}
-
-		if (!this.options.allowAnyOutput && typeof result !== 'undefined' && typeof result !== 'string') {
-			throw new OutputError('Must return a string');
-		}
-
+		const result = new HapifyVM(this.options).run(this.wrap(content), { context });
 		return result;
 	}
 }

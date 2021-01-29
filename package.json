@@ -1,7 +1,7 @@
 {
   "name": "@hapify/ejs-vm",
   "version": "0.3.4",
-  "description": "Sandbox for JavaScript code",
+  "description": "Sandbox for EJS templates",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -16,6 +16,7 @@
   },
   "keywords": [
     "hapify",
+    "ejs",
     "vm"
   ],
   "author": "Edouard Demotes-Mainard <edouard@tractr.net>",
@@ -38,7 +39,7 @@
     "typescript": "^4.0.5"
   },
   "dependencies": {
-    "vm2": "^3.9.2"
+    "@hapify/vm": "^0.3.4"
   },
   "engines": {
     "node": ">=9"
