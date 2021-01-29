@@ -1,98 +1,75 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.HapifyVM = exports.IntegrityError = exports.TimeoutError = exports.EvaluationError = exports.OutputError = void 0;
-const vm2_1 = require("vm2");
+exports.HapifyEJS = exports.EjsEvaluationError = void 0;
+const vm_1 = require("@hapify/vm");
+const fs_1 = require("fs");
+const path_1 = require("path");
 const SECOND = 1000;
-class OutputError extends Error {
+const EjsLibContent = fs_1.readFileSync(path_1.join(__dirname, 'ejs.js'), { encoding: 'utf8' });
+class EjsEvaluationError extends Error {
     constructor() {
         super(...arguments);
-        this.code = 6001;
-        this.name = 'VmOutputError';
-    }
-}
-exports.OutputError = OutputError;
-class EvaluationError extends Error {
-    constructor() {
-        super(...arguments);
-        this.code = 6002;
-        this.name = 'VmEvaluationError';
+        this.code = 7001;
+        this.name = 'EjsEvaluationError';
         this.lineNumber = null;
-        this.columnNumber = null;
         this.details = null;
     }
 }
-exports.EvaluationError = EvaluationError;
-class TimeoutError extends Error {
-    constructor() {
-        super(...arguments);
-        this.code = 6003;
-        this.name = 'VmTimeoutError';
-    }
-}
-exports.TimeoutError = TimeoutError;
-class IntegrityError extends Error {
-    constructor() {
-        super(...arguments);
-        this.code = 6004;
-        this.name = 'VmIntegrityError';
-    }
-}
-exports.IntegrityError = IntegrityError;
-class HapifyVM {
+exports.EjsEvaluationError = EjsEvaluationError;
+class HapifyEJS {
     /** Constructor */
     constructor(options = {}) {
         /** Default options */
         this.defaultOptions = {
             timeout: SECOND,
-            allowAnyOutput: false,
         };
-        /** RegEx used to extract error's line & column */
-        this.stackRegex = /vm\.js:([0-9]+):([0-9]+)/m;
         this.options = Object.assign({}, this.defaultOptions, options);
     }
-    /** Wrap content in auto-executable function */
-    wrap(content) {
-        return `(function() {\n${content}\n })()`;
+    /** Wrap content in ejs compiler */
+    wrapWithEjs(content) {
+        const escapedContent = this.escapeContent(content);
+        return `${EjsLibContent}
+const content = \`${escapedContent}\`;
+return ejs.compile(content)(context);
+		`;
+    }
+    /** Escape string from ` and $ */
+    escapeContent(content) {
+        return content.replace(/\$/g, '\\$').replace(/`/g, '\\`');
     }
     /** Execute content */
     run(content, context) {
+        const wrappedContent = this.wrapWithEjs(content);
+        const options = Object.assign({}, this.options, { eval: true });
+        const vm = new vm_1.HapifyVM(options);
         let result;
-        const vm = new vm2_1.VM({
-            timeout: this.options.timeout,
-            sandbox: Object.assign(context, this.forbiddenObjects),
-            compiler: 'javascript',
-            eval: false,
-            wasm: false,
-        });
-        const wrappedContent = this.wrap(content);
         try {
-            result = vm.run(wrappedContent);
+            result = vm.run(wrappedContent, { context });
         }
         catch (error) {
-            // Check error
-            if (typeof error.message !== 'string' || typeof error.stack !== 'string') {
-                throw new IntegrityError('Invalid error');
-            }
-            if (error.message.startsWith('Script execution timed out')) {
-                throw new TimeoutError(error.message);
-            }
-            // Parse error
-            const evalError = new EvaluationError(error.message);
-            const matches = this.stackRegex.exec(error.stack);
-            if (matches) {
-                const lineNumber = Number(matches[1]);
-                const columnNumber = Number(matches[2]);
-                evalError.details = `Error: ${evalError.message}. Line: ${lineNumber}, Column: ${columnNumber}`;
-                evalError.lineNumber = lineNumber - 1; // Minus 1 for wrapper
-                evalError.columnNumber = columnNumber;
-            }
-            throw evalError;
-        }
-        if (!this.options.allowAnyOutput && typeof result !== 'undefined' && typeof result !== 'string') {
-            throw new OutputError('Must return a string');
+            throw this.transformEjsError(error);
         }
         return result;
     }
+    transformEjsError(error) {
+        if (error instanceof vm_1.EvaluationError) {
+            if (error.details && error.details.startsWith('Error: ejs:')) {
+                const lines = error.details.split('\n');
+                const lastLine = lines
+                    .pop()
+                    .replace(/\. Line: [0-9]+, Column: [0-9]+/, '')
+                    .trim();
+                const lineNumberMatches = /Error: ejs:([0-9]+)/.exec(lines[0]);
+                const lineNumber = lineNumberMatches ? Number(lineNumberMatches[1]) : null;
+                const details = lines.join('\n').trim();
+                const ejsError = new EjsEvaluationError(lastLine);
+                ejsError.details = details;
+                ejsError.lineNumber = lineNumber;
+                return ejsError;
+            }
+        }
+        return error;
+    }
 }
-exports.HapifyVM = HapifyVM;
+exports.HapifyEJS = HapifyEJS;
 //# sourceMappingURL=index.js.map
