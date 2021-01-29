@@ -1,8 +1,11 @@
 import { HapifyVM } from '@hapify/vm';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 
 const SECOND = 1000;
+const EjsLibContent = readFileSync(join(__dirname, 'ejs.js'), { encoding: 'utf8' });
 
-interface HapifyEJSVMOptions {
+interface HapifyEJSOptions {
 	timeout?: number;
 	allowAnyOutput?: boolean;
 }
@@ -23,17 +26,17 @@ export class TimeoutError extends Error {
 	name = 'VmTimeoutError';
 }
 
-export class HapifyEJSVM {
+export class HapifyEJS {
 	/** Default options */
-	private defaultOptions: HapifyEJSVMOptions = {
+	private defaultOptions: HapifyEJSOptions = {
 		timeout: SECOND,
 		allowAnyOutput: false,
 	};
 	/** Actual options */
-	private options: HapifyEJSVMOptions;
+	private options: HapifyEJSOptions;
 
 	/** Constructor */
-	constructor(options: HapifyEJSVMOptions = {}) {
+	constructor(options: HapifyEJSOptions = {}) {
 		this.options = Object.assign({}, this.defaultOptions, options);
 	}
 

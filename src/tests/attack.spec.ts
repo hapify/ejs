@@ -1,59 +1,59 @@
 import { expect, fail } from '@hapi/code';
 import 'mocha';
 
-import { HapifyEJSVM } from '../index';
+import { HapifyEJS } from '../index';
 
 describe('possible attacks', () => {
 	it('process accesses', async () => {
 		const script = '<% process.exit(); %>';
-		expect(() => new HapifyEJSVM().run(script, {})).to.throw('process is not defined');
+		expect(() => new HapifyEJS().run(script, {})).to.throw('process is not defined');
 	});
 	it('require accesses 1', async () => {
-		const script = 'require("http");';
-		expect(() => new HapifyEJSVM().run(script, {})).to.throw('require is not defined');
+		const script = '<% require("http"); %>';
+		expect(() => new HapifyEJS().run(script, {})).to.throw('require is not defined');
 	});
 	it('require accesses 2', async () => {
 		const script = 'models.constructor.constructor("return process.mainModule.require")()("http")';
-		expect(() => new HapifyEJSVM().run(script, { models: {} })).to.throw('Code generation from strings disallowed for this context');
+		expect(() => new HapifyEJS().run(script, { models: {} })).to.throw('Code generation from strings disallowed for this context');
 	});
 	it('global values', async () => {
 		const script = 'return JSON.stringify(Object.keys(global));';
-		const result = JSON.parse(new HapifyEJSVM().run(script, {}));
+		const result = JSON.parse(new HapifyEJS().run(script, {}));
 		expect(result).to.equal(['VMError', 'Buffer']);
 	});
 	it('process deep accesses', async () => {
 		const script = 'models.constructor.constructor("return { process }")().exit()';
-		expect(() => new HapifyEJSVM().run(script, { models: {} })).to.throw('Code generation from strings disallowed for this context');
+		expect(() => new HapifyEJS().run(script, { models: {} })).to.throw('Code generation from strings disallowed for this context');
 	});
 	it('process deep accesses with this', async () => {
 		const script = 'this.constructor.constructor("return { process }")().exit()';
-		expect(() => new HapifyEJSVM().run(script, {})).to.throw('Code generation from strings disallowed for this context');
+		expect(() => new HapifyEJS().run(script, {})).to.throw('Code generation from strings disallowed for this context');
 	});
 
 	it('alter console 1', async () => {
 		const script = 'console = undefined; return "";';
-		new HapifyEJSVM().run(script, {});
+		new HapifyEJS().run(script, {});
 		expect(console).to.not.be.undefined();
 	});
 	it('alter console 2', async () => {
 		const script = 'console.log = function() { return "trojan" }; return "";';
-		new HapifyEJSVM().run(script, {});
+		new HapifyEJS().run(script, {});
 		expect(console.log()).to.not.be.a.string();
 	});
 
 	it('return fake string', async () => {
 		const script = 'return { toString: function() { /* Bad function */ } };';
-		expect(() => new HapifyEJSVM().run(script, {})).to.throw('Must return a string');
+		expect(() => new HapifyEJS().run(script, {})).to.throw('Must return a string');
 	});
 
 	it('throw evil error 1', async () => {
 		const script = 'throw { message: { toString: function() { /* Bad function */ } } };';
-		expect(() => new HapifyEJSVM().run(script, {})).to.throw('Invalid error');
+		expect(() => new HapifyEJS().run(script, {})).to.throw('Invalid error');
 	});
 	it('throw evil error 2', async () => {
 		const script = 'throw { stack: { toString: function() { /* Bad function */ } } };';
 		try {
-			new HapifyEJSVM().run(script, {});
+			new HapifyEJS().run(script, {});
 			fail('Should throw an error');
 		} catch (e) {
 			expect(e.name).to.equal('VmIntegrityError');

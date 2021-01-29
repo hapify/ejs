@@ -1,5 +1,5 @@
 {
-  "name": "@hapify/ejs-vm",
+  "name": "@hapify/ejs",
   "version": "0.3.4",
   "description": "Sandbox for EJS templates",
   "main": "dist/index.js",
@@ -12,7 +12,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com:hapify/ejs-vm.git"
+    "url": "git+ssh://git@github.com:hapify/ejs.git"
   },
   "keywords": [
     "hapify",
@@ -21,7 +21,7 @@
   ],
   "author": "Edouard Demotes-Mainard <edouard@tractr.net>",
   "license": "MIT",
-  "homepage": "https://github.com/hapify/ejs-vm#readme",
+  "homepage": "https://github.com/hapify/ejs#readme",
   "devDependencies": {
     "@commitlint/cli": "^11.0.0",
     "@commitlint/config-conventional": "^11.0.0",
