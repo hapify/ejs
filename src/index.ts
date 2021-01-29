@@ -1,9 +1,11 @@
 import { EvaluationError, HapifyVM } from '@hapify/vm';
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import pkgDir from 'pkg-dir';
 
 const SECOND = 1000;
-const EjsLibContent = readFileSync(join(__dirname, 'ejs.js'), { encoding: 'utf8' });
+const RootDir = pkgDir.sync(__dirname);
+const EjsLibContent = readFileSync(join(RootDir, 'libs', 'ejs.js'), { encoding: 'utf8' });
 
 interface HapifyEJSOptions {
 	timeout: number;

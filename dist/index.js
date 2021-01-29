@@ -1,11 +1,16 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.HapifyEJS = exports.EjsEvaluationError = void 0;
 const vm_1 = require("@hapify/vm");
 const fs_1 = require("fs");
 const path_1 = require("path");
+const pkg_dir_1 = __importDefault(require("pkg-dir"));
 const SECOND = 1000;
-const EjsLibContent = fs_1.readFileSync(path_1.join(__dirname, 'ejs.js'), { encoding: 'utf8' });
+const RootDir = pkg_dir_1.default.sync(__dirname);
+const EjsLibContent = fs_1.readFileSync(path_1.join(RootDir, 'libs', 'ejs.js'), { encoding: 'utf8' });
 class EjsEvaluationError extends Error {
     constructor() {
         super(...arguments);

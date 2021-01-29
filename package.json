@@ -1,6 +1,6 @@
 {
   "name": "@hapify/ejs",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Sandbox for EJS templates",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -39,7 +39,8 @@
     "typescript": "^4.1.3"
   },
   "dependencies": {
-    "@hapify/vm": "^0.3.6"
+    "@hapify/vm": "^0.3.6",
+    "pkg-dir": "^5.0.0"
   },
   "engines": {
     "node": ">=12"
